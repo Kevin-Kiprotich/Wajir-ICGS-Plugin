@@ -32,8 +32,6 @@ from .share import DlgShare
 
 # Initialize Qt resources from file resources.py
 from .resources import *
-# Import the code for the dialog
-from .wajir_icgs_dialog import Wajir_ICGSDialog
 import os.path
 
 
