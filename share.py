@@ -1,9 +1,11 @@
 from .styles import highlightComboBox, highlightLineEdit, resetComboBoxHighlight, resetLineEditHighlight
 from .gui.DlgShare import Ui_DlgShare
+from .gui.DlgQuestionnaireDetails import Ui_DlgQuestionnaireDetails
 
 from qgis.PyQt.QtCore import QSettings,QUrl, Qt
 from qgis.PyQt import QtWidgets, QtCore
-from qgis.PyQt.QtGui import QDesktopServices
+from qgis.PyQt.QtGui import QDesktopServices, QPixmap
+from qgis.PyQt.QtNetwork import QNetworkAccessManager, QNetworkRequest
 from qgis.core import QgsVectorLayer, QgsProject
 import requests
 from .constants import *
@@ -77,7 +79,7 @@ class DlgShare(QtWidgets.QDialog, Ui_DlgShare):
             self.questionnaireComboBox.clear()  # Clear existing items
 
             for questionnaire in questionnaires:
-                self.questionnaireComboBox.addItem(questionnaire["title"], questionnaire["qr_code"])  # Display title, store ID
+                self.questionnaireComboBox.addItem(questionnaire["title"], (questionnaire["qr_code"], questionnaire['id']))  # Display title, store ID
 
             # Optional: Set the first item as default
             if self.questionnaireComboBox.count() > 0:
@@ -85,10 +87,10 @@ class DlgShare(QtWidgets.QDialog, Ui_DlgShare):
             progress_bar.setValue(100)
             progress_dialog.close()
         elif response.status_code == 401:
-            log("Session expired. Error code: {}".format(response.status_code))
+            log("Session expired.  Please login again to proceed. Error code: {}".format(response.status_code))
             QtWidgets.QMessageBox.critical (None,
                                     QtWidgets.QApplication.translate("WAJIR_ICGS", "Error"),
-                                    QtWidgets.QApplication.translate("WAJIR_ICGS","Session expired. Error code: {}".format(response.status_code)))
+                                    QtWidgets.QApplication.translate("WAJIR_ICGS","Session expired. Please login again to proceed. Error code: {}".format(response.status_code)))
         elif str(response.status_code).startswith("5"):
             log("Could not connect to the WAJIR_ICGS server due to a server error. Error code: {}".format(response.status_code))
             QtWidgets.QMessageBox.critical(None,
@@ -102,5 +104,35 @@ class DlgShare(QtWidgets.QDialog, Ui_DlgShare):
                                     QtWidgets.QApplication.translate("WAJIR_ICGS", "Could not connect to the WAJIR_ICGS. Error code: {}".format(response.status_code)))
     
     def share(self):
-        url = QUrl(self.questionnaireComboBox.currentData()) #This holds the url for registration of new users in the QGIS plugin
-        QDesktopServices.openUrl(url)
+        self.close()
+        qr_code, questionnaire_id = self.questionnaireComboBox.currentData()
+        link = f"{baseURL}/api/data_handler/questionnaires/{questionnaire_id}"
+        dialog = DlgQuestionnaireDetails(qr_code, link)
+        dialog.exec_()
+
+class DlgQuestionnaireDetails(QtWidgets.QDialog, Ui_DlgQuestionnaireDetails):
+    def __init__(self, image_path, link, parent=None):
+        super(DlgQuestionnaireDetails, self).__init__(parent)
+
+        self.setupUi(self)
+        self.linkLabel.setText(f'<a href="{link}">{link}</a>')
+
+        self.manager = QNetworkAccessManager(self)
+        self.manager.finished.connect(self.on_image_downloaded)
+
+        # Start downloading the image
+        self.manager.get(QNetworkRequest(QUrl(image_path)))
+
+    def on_image_downloaded(self, reply):
+        if reply.error():
+            print(f"Error downloading image: {reply.errorString()}")
+            return
+
+        # Read the image data and load it into a QPixmap
+        image_data = reply.readAll()
+        pixmap = QPixmap()
+        pixmap.loadFromData(image_data)
+
+        # Set the downloaded image into the QLabel
+        self.qrLabel.setPixmap(pixmap)
+        self.qrLabel.setScaledContents(True) 

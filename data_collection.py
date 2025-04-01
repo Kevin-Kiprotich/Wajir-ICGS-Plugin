@@ -88,10 +88,10 @@ class DlgDataCollection(QtWidgets.QDialog, Ui_DlgDataCollection):
             progress_bar.setValue(100)
             progress_dialog.close()
         elif response.status_code == 401:
-            log("Session expired. Error code: {}".format(response.status_code))
+            log("Session expired. Please login again to proceed. Error code: {}".format(response.status_code))
             QtWidgets.QMessageBox.critical (None,
                                     QtWidgets.QApplication.translate("WAJIR_ICGS", "Error"),
-                                    QtWidgets.QApplication.translate("WAJIR_ICGS","Session expired. Error code: {}".format(response.status_code)))
+                                    QtWidgets.QApplication.translate("WAJIR_ICGS","Session expired.  Please login again to proceed. Error code: {}".format(response.status_code)))
         elif str(response.status_code).startswith("5"):
             log("Could not connect to the WAJIR_ICGS server due to a server error. Error code: {}".format(response.status_code))
             QtWidgets.QMessageBox.critical(None,

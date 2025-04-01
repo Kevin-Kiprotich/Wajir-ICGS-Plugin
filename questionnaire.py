@@ -94,10 +94,10 @@ class DlgQuestionnaire(QtWidgets.QDialog, Ui_DlgQuestionnaire):
             self.close()
 
         elif response.status_code == 401:
-            log("Session expired. Error code: {}".format(response.status_code))
+            log("Session expired. Please login again to proceed. Error code: {}".format(response.status_code))
             QtWidgets.QMessageBox.critical (None,
                                     QtWidgets.QApplication.translate("WAJIR_ICGS", "Error"),
-                                    QtWidgets.QApplication.translate("Session expired. Error code: {}".format(response.status_code)))
+                                    QtWidgets.QApplication.translate("Session expired.  Please login again to proceed. Error code: {}".format(response.status_code)))
         elif response.json().get("excel_file") is not None:
             log(f"{response.json().get("excel_file")[0]['options']}. Error code: {response.status_code}")
             QtWidgets.QMessageBox.critical (None,
@@ -114,4 +114,8 @@ class DlgQuestionnaire(QtWidgets.QDialog, Ui_DlgQuestionnaire):
             QtWidgets.QMessageBox.critical(None,
                                     QtWidgets.QApplication.translate("WAJIR_ICGS", "Error"),
                                     QtWidgets.QApplication.translate("WAJIR_ICGS", "Could not connect to the WAJIR_ICGS. Error code: {}".format(response.status_code)))
+            
+
+
+
         
